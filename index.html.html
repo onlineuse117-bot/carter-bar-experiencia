@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carter Bar · ¿Qué cóctel eres?</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style> body { background: #0E1B1A; margin: 0; } </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ── Paleta tomada de la carta: verde petróleo, oro, hueso ── */
+const C = {
+  ink: "#0E1B1A",
+  card: "#162A28",
+  line: "#2C4642",
+  sage: "#7FA098",
+  gold: "#C9A24B",
+  bone: "#E9E3D5",
+};
+const display = { fontFamily: "Georgia, 'Times New Roman', serif" };
+const mono = { fontFamily: "'Courier New', Courier, monospace" };
+
+/* ── Carta real de Carter Bar ── */
+const DRINKS = {
+  terroir: { n: "Terroir", d: "Shrub de apio, Giffard de ruibarbo y prosecco", ml: 200, p: 205, tag: "Signature", abv: "Suave", why: "El más 'jardín' de la carta: el shrub de apio da acidez vegetal, el ruibarbo un amargor limpio y el prosecco lo levanta. Complejo sin ser pesado, y el que menos alcohol tiene de los de autor." },
+  elsalas: { n: "El Salas", d: "Cordial de piña, Roku gin, vermouth Mancino y foam de matcha", ml: 135, p: 235, tag: "Signature", abv: "Medio", why: "Piña y matcha suenan raro y funcionan: el cordial entra dulce-tropical y el matcha lo corta con amargor herbal. El Roku gin (japonés, con sakura y yuzu) une las dos mitades, y la espuma lo vuelve sedoso." },
+  cardon: { n: "Cardón", d: "Aguacate clarificado con bacanora aguamiel, cordial de albahaca y Cocchi Americano", ml: 150, p: 250, tag: "Signature", abv: "Medio", why: "Clarificar el aguacate le quita el peso y le deja la untuosidad: queda transparente pero se siente cremoso. La albahaca y el amargo suave del Cocchi lo mantienen fresco, y la bacanora es agave sin humo." },
+  ramotuna: { n: "Ramo de Tuna", d: "Jarabe clarificado de tuna con jitomate cherry y Pox Siglo Cero", ml: 150, p: 350, tag: "Signature", abv: "Medio", why: "El más audaz de la casa. Tuna y jitomate arman un perfil dulce-salado que casi no existe en coctelería, y el pox (destilado de maíz chiapaneco) aporta un ahumado suave, distinto al del mezcal." },
+  aperol: { n: "Aperol Spritz", d: "Vino espumoso y Aperol", ml: 180, p: 270, tag: "Clásico", abv: "Suave", why: "Amargo cítrico, burbuja y poca graduación. Está literalmente diseñado como aperitivo: abre el apetito y se deja tomar durante toda una conversación." },
+  stgermain: { n: "St. Germain Spritz", d: "St. Germain, prosecco y agua mineral", ml: 180, p: 505, tag: "Clásico", abv: "Suave", why: "Flor de saúco: floral, seco y delicado. Es el spritz más elegante y el más caro de la carta; se paga el licor." },
+  mojito: { n: "Mojito", d: "Hierbabuena, azúcar, limón y ron", ml: 473, p: 180, tag: "Clásico", abv: "Suave", why: "473 ml de menta, limón y hielo. Poca graduación repartida en mucho vaso: refresca sin exigirte nada." },
+  mojitofr: { n: "Mojito Frutos Rojos", d: "Hierbabuena, azúcar, limón, frutos rojos y ron", ml: 473, p: 210, tag: "Clásico", abv: "Suave", why: "El mojito con fruta: más goloso, mismo tamaño generoso y misma ligereza. La acidez de los frutos rojos evita que se vuelva empalagoso." },
+  paloma: { n: "Paloma", d: "Toronja, Cascahuín reposado, limón, jarabe de agave y agua mineral", ml: 180, p: 210, tag: "Clásico", abv: "Suave", why: "Toronja amarga, burbuja mineral y un tequila reposado que se asoma tantito. Sin pretensiones y difícil de mejorar." },
+  ginfizz: { n: "Gin Fizz", d: "Beefeater London Dry, limón, jarabe natural, aquafaba y agua mineral", ml: 175, p: 210, tag: "Clásico", abv: "Suave", why: "Cítrico con textura de nube: la aquafaba monta una espuma densa y el agua mineral lo alarga. Ácido, aireado y suave de alcohol." },
+  mule: { n: "Moscow Mule", d: "Zubrówka, limón y ginger beer", ml: 190, p: 205, tag: "Clásico", abv: "Suave", why: "El jengibre pica, el limón corta y el vodka casi desaparece. Refrescante pero con filo." },
+  pinacolada: { n: "Piña Colada", d: "Crema de coco, jugo de piña natural tatemado y ron", ml: 444, p: 190, tag: "Clásico", abv: "Suave", why: "Cremosa, tropical y enorme. La piña tatemada le mete un fondo tostado y caramelizado que la versión de playa no tiene." },
+  margarita: { n: "Margarita", d: "Tequila Centenario Plata, shakeada — frutos rojos, limón, maracuyá o mango", ml: 180, p: 210, tag: "Clásico", abv: "Medio", why: "Ácida, fría y con fruta a elegir. Un clásico que nunca falla, y aquí lo shakean, así que llega aireado y bien frío." },
+  pisco: { n: "Pisco Sour", d: "Pisco Quebranta, jarabe natural, limón, aquafaba y angostura", ml: 170, p: 205, tag: "Clásico", abv: "Medio", why: "Sedoso y ácido, con las gotas de angostura encima aromatizando cada trago. El equilibrio dulce-ácido-textura más fino de la carta." },
+  cosmo: { n: "Cosmopolitan", d: "Absolut Citron, arándano, limón y Cointreau", ml: 120, p: 220, tag: "Clásico", abv: "Medio", why: "Frutal y ácido, servido helado en copa. Bonito de ver y más seco de lo que su fama sugiere." },
+  mezcalita: { n: "Mezcalita", d: "Mezcal Unión joven — jamaica, frutos rojos, limón, maracuyá o mango", ml: 180, p: 250, tag: "Clásico", abv: "Medio", why: "Margarita con mezcal: la fruta entra dulce y el humo contesta al final. Es el punto medio perfecto entre refrescante e intenso." },
+  naked: { n: "Naked and Famous", d: "Mezcal Unión joven, Aperol, Yellow Chartreuse y limón", ml: 120, p: 350, tag: "Clásico", abv: "Fuerte", why: "Cuatro partes iguales: humo, amargo, herbal y ácido. Sin azúcar añadida y sin lugar donde esconderse. Es el trago de quien ya sabe lo que quiere." },
+  negroni: { n: "Negroni", d: "Campari, Beefeater London Dry y Cocchi di Torino", ml: 90, p: 215, tag: "Clásico", abv: "Fuerte", why: "Amargo, seco y sin concesiones. 90 ml para tomar lento: es un trago de conversación larga, no de sed." },
+  oldfashioned: { n: "Old Fashioned", d: "Wild Turkey 101, Luxardo Maraschino, angostura y orange angostura", ml: 75, p: 275, tag: "Clásico", abv: "Fuerte", why: "Destilado, azúcar, amargos y hielo: la definición original de la palabra 'cóctel'. Con Wild Turkey 101 llega potente y especiado." },
+  boulevardier: { n: "Boulevardier", d: "Campari, Mitcher's bourbon y Antica Formula", ml: 90, p: 290, tag: "Clásico", abv: "Fuerte", why: "El Negroni con bourbon en lugar de gin: más cálido, más redondo, igual de amargo. El Antica Formula le suma vainilla." },
+  hanky: { n: "Hanky Panky", d: "Beefeater London Dry, Antica Formula y Fernet", ml: 100, p: 312, tag: "Clásico", abv: "Fuerte", why: "El Fernet le mete un amargo mentolado que no se parece a nada más en esta carta. Raro, adictivo y muy poco pedido." },
+  martini: { n: "Martini Dry", d: "Bombay, vermouth Dolin Dry, aceituna verde", ml: 75, p: 220, tag: "Martini", abv: "Fuerte", why: "Ginebra helada, un susurro de vermouth y una aceituna. No hay dónde esconderse: o te gusta el destilado, o no." },
+  espresso: { n: "Espresso Martini", d: "Espresso, Ketel One, Kahlúa y jarabe natural", ml: 120, p: 205, tag: "Clásico", abv: "Medio", why: "Café frío con espuma y vodka. Sabe a postre y te despierta: el único trago de la carta que hace las dos cosas." },
+  carajillo: { n: "Carajillo", d: "Licor 43, espresso y Zacapa 23", ml: 120, p: 275, tag: "Clásico", abv: "Medio", why: "Vainilla, cítrico dulce y café, con un ron guatemalteco añejo de fondo. El cierre clásico de cualquier mesa mexicana." },
+  bloody: { n: "Bloody Mary", d: "Vodka, salsas, jugo de tomate y limón", ml: 473, p: 185, tag: "Clásico", abv: "Suave", why: "Salado, picante y enorme. Prácticamente una botana líquida: el vodka queda de reparto." },
+};
+
+/* ── La carta pesa a favor de lo ligero ── */
+const BASE = { terroir: 3, aperol: 3, mojito: 3, mojitofr: 3, paloma: 3, stgermain: 2, ginfizz: 2, mule: 2, pinacolada: 2, elsalas: 2, cardon: 1, ramotuna: 1, pisco: 1, bloody: 1 };
+
+const Q = [
+  {
+    q: "Llegas al bar y te sientas. ¿Qué te pide el cuerpo?",
+    axis: "intención",
+    a: [
+      { t: "Algo frío que se tome sin pensarlo", read: "buscas refresco puro, no un acertijo", w: { mojito: 3, paloma: 3, margarita: 2, mule: 2, aperol: 2, bloody: 1 } },
+      { t: "Burbujas, para brindar como se debe", read: "quieres que el trago se sienta como una celebración", w: { aperol: 3, stgermain: 3, terroir: 3, ginfizz: 2 } },
+      { t: "Un trago serio, para tomar despacio", read: "prefieres poco volumen y mucha concentración", w: { negroni: 3, oldfashioned: 3, boulevardier: 3, martini: 2, hanky: 2 } },
+      { t: "Algo que jamás haya probado", read: "vienes por la curiosidad, no por la costumbre", w: { ramotuna: 3, cardon: 3, elsalas: 3, terroir: 2, naked: 2 } },
+    ],
+  },
+  {
+    q: "El sabor que te hace voltear:",
+    axis: "paladar",
+    a: [
+      { t: "Cítrico y ácido", read: "tu eje es la acidez", w: { margarita: 3, paloma: 3, ginfizz: 3, pisco: 3, cosmo: 2, mule: 1 } },
+      { t: "Amargo y herbal", read: "toleras (y disfrutas) el amargor, cosa de pocos", w: { negroni: 3, aperol: 3, naked: 3, boulevardier: 2, hanky: 2, terroir: 2 } },
+      { t: "Dulce y frutal", read: "quieres fruta al frente", w: { mojitofr: 3, cosmo: 3, pinacolada: 3, stgermain: 2, margarita: 1 } },
+      { t: "Vegetal y salino, tipo huerto", read: "te va lo salado-vegetal, el territorio más raro de la coctelería", w: { cardon: 3, terroir: 3, bloody: 3, ramotuna: 2, martini: 1 } },
+      { t: "Tostado: café, cacao, caramelo", read: "buscas notas tostadas y dulces", w: { espresso: 3, carajillo: 3, oldfashioned: 2, boulevardier: 2 } },
+    ],
+  },
+  {
+    q: "¿Qué tanto quieres sentir el alcohol?",
+    axis: "intensidad",
+    a: [
+      { t: "Casi nada, quiero platicar toda la noche", read: "pediste baja graduación", w: { aperol: 3, stgermain: 3, terroir: 3, mojito: 3, paloma: 2, mule: 2, pinacolada: 2, bloody: 2 } },
+      { t: "Equilibrado: que se note pero no mande", read: "quieres el destilado presente pero domado", w: { margarita: 2, ginfizz: 2, pisco: 2, elsalas: 2, cosmo: 2, mojitofr: 2, cardon: 2, ramotuna: 2, espresso: 1 } },
+      { t: "Con carácter, que se pare de frente", read: "no le huyes al alcohol", w: { negroni: 3, oldfashioned: 3, boulevardier: 3, hanky: 2, naked: 2, mezcalita: 2 } },
+      { t: "Directo, casi puro destilado", read: "quieres el destilado desnudo", w: { martini: 4, oldfashioned: 2, negroni: 1, hanky: 1 } },
+    ],
+  },
+  {
+    q: "La textura que te gusta en la boca:",
+    axis: "textura",
+    a: [
+      { t: "Burbujeante y ligera", read: "la burbuja es innegociable", w: { aperol: 3, stgermain: 3, terroir: 3, mule: 2, ginfizz: 2, paloma: 2 } },
+      { t: "Sedosa, con espuma encima", read: "te importa el cuerpo tanto como el sabor", w: { ginfizz: 3, pisco: 3, elsalas: 3, espresso: 2 } },
+      { t: "Limpia y helada, sin adornos", read: "quieres el trago sin distracciones", w: { martini: 3, margarita: 2, negroni: 2, cosmo: 2, paloma: 1 } },
+      { t: "Cremosa y densa", read: "vas por textura rica", w: { pinacolada: 3, carajillo: 2, espresso: 2, cardon: 2 } },
+    ],
+  },
+  {
+    q: "Ahumado y mezcal:",
+    axis: "humo",
+    a: [
+      { t: "Me encanta, entre más humo mejor", read: "el humo te llama", w: { mezcalita: 4, naked: 4, ramotuna: 2 } },
+      { t: "Un toque, sin que domine", read: "aceptas humo, pero de fondo", w: { cardon: 2, ramotuna: 2, naked: 2, mezcalita: 1 } },
+      { t: "Mejor no", read: "descartaste el humo", w: { aperol: 1, mojito: 1, ginfizz: 1, paloma: 1, stgermain: 1, terroir: 1, cosmo: 1, margarita: 1, pinacolada: 1 } },
+    ],
+  },
+  {
+    q: "Si tu trago fuera un lugar, sería:",
+    axis: "ánimo",
+    a: [
+      { t: "Una terraza en Italia al atardecer", read: "vas por el aperitivo europeo", w: { aperol: 3, stgermain: 3, negroni: 2 } },
+      { t: "Un jardín botánico después de la lluvia", read: "te atrae lo verde, herbal y limpio", w: { terroir: 3, cardon: 3, elsalas: 2, ginfizz: 1 } },
+      { t: "Una hamaca frente al mar", read: "quieres algo tropical y sin prisa", w: { pinacolada: 3, mojito: 3, mojitofr: 2, margarita: 1 } },
+      { t: "Una biblioteca con sillón de piel", read: "buscas un trago de contemplación", w: { oldfashioned: 3, boulevardier: 3, hanky: 3, martini: 2, carajillo: 1 } },
+      { t: "Un mercado mexicano a mediodía", read: "quieres agave, cítrico y sabor de casa", w: { paloma: 3, mezcalita: 3, ramotuna: 2, bloody: 2 } },
+    ],
+  },
+  {
+    q: "El detalle que te conquista de un trago:",
+    axis: "detalle",
+    a: [
+      { t: "Una espuma perfecta", read: "te seduce la técnica visible", w: { elsalas: 3, ginfizz: 3, pisco: 3, espresso: 1 } },
+      { t: "Un ingrediente raro que tienes que preguntar qué es", read: "quieres algo de qué hablar", w: { ramotuna: 3, cardon: 3, terroir: 2, naked: 2 } },
+      { t: "Un clásico impecable, sin reinventar", read: "confías en la receta probada", w: { negroni: 3, martini: 3, oldfashioned: 3, mojito: 2, margarita: 2 } },
+      { t: "Que sea grande y me dure toda la noche", read: "el volumen importa: quieres vaso largo", w: { mojito: 3, mojitofr: 3, pinacolada: 3, bloody: 2, mule: 1 } },
+    ],
+  },
+];
+
+function analyze(ans) {
+  const s = { ...BASE };
+  const contrib = {};
+  ans.forEach((ai, qi) => {
+    const opt = Q[qi].a[ai];
+    for (const k in opt.w) {
+      s[k] = (s[k] || 0) + opt.w[k];
+      contrib[k] = contrib[k] || [];
+      contrib[k].push({ pts: opt.w[k], read: opt.read, axis: Q[qi].axis, label: opt.t });
+    }
+  });
+  const rank = Object.entries(s).sort((a, b) => b[1] - a[1]);
+  const winner = rank[0][0];
+  const reasons = (contrib[winner] || []).sort((a, b) => b.pts - a.pts).slice(0, 4);
+  return { winner, runnerUp: rank[1][0], third: rank[2][0], reasons, total: rank[0][1] };
+}
+
+
+/* ============================================================
+   CONFIGURACIÓN — pega aquí los datos de tu proyecto Supabase
+   (Project Settings → API). La "anon key" es pública por
+   diseño: la seguridad se controla con Row Level Security.
+   ============================================================ */
+const SUPABASE_URL  = "https://mdnjvjbknppzihqmtnav.supabase.co";
+const SUPABASE_KEY  = "sb_publishable_fbq9bFpSvg22mSPGK8GuGQ_nLcCcOlg";
+const RESTAURANTE   = "carter-bar";                 // identificador del sitio
+const RESPONSABLE   = "Hacienda La Laborcilla";     // quien es responsable de los datos
+const CORREO_ARCO   = "onlineuse117@gmail.com";     // contacto de derechos ARCO
+
+/* Limpia la URL por si se pegó con /rest/v1 o diagonal final */
+const BASE_URL = SUPABASE_URL.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
+const activo = () => BASE_URL.startsWith("https://");
+
+/* Guarda una fila en la tabla `respuestas`. Nunca bloquea la experiencia:
+   si falla, el quiz sigue funcionando igual. */
+async function guardar(payload) {
+  if (!activo()) { console.log("[demo] sin base de datos:", payload); return { ok:false, demo:true }; }
+  try {
+    const nueva = SUPABASE_KEY.startsWith("sb_");   // formato nuevo de Supabase
+    const headers = {
+      "apikey": SUPABASE_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal",
+    };
+    if (!nueva) headers["Authorization"] = "Bearer " + SUPABASE_KEY;
+    const r = await fetch(BASE_URL + "/rest/v1/respuestas", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    let detalle = "";
+    if (!r.ok) { try { detalle = await r.text(); } catch(e){} console.error("Supabase", r.status, detalle); }
+    return { ok: r.ok, status: r.status, detalle };
+  } catch (e) { console.error(e); return { ok:false, status:0, detalle:String(e) }; }
+}
+
+/* ── Puerta de edad: obligatoria antes de mostrar contenido con alcohol ── */
+function PuertaEdad({ onPasa }) {
+  const [no, setNo] = useState(false);
+  if (no) return (
+    <div className="text-center max-w-sm mx-auto">
+      <p className="text-lg mb-3" style={display}>Gracias por tu visita</p>
+      <p className="text-sm leading-relaxed" style={{ color: C.sage }}>
+        Este contenido está dirigido únicamente a personas mayores de edad.
+        Con gusto te recomendamos algo de nuestra carta sin alcohol con tu mesero.
+      </p>
+    </div>
+  );
+  return (
+    <div className="text-center max-w-sm mx-auto">
+      <p className="text-2xl mb-3" style={display}>¿Eres mayor de 18 años?</p>
+      <p className="text-sm mb-8 leading-relaxed" style={{ color: C.sage }}>
+        Esta herramienta recomienda bebidas alcohólicas. Necesitamos confirmar tu edad antes de continuar.
+      </p>
+      <div className="space-y-2">
+        <button onClick={onPasa} className="w-full py-3 rounded-sm text-sm tracking-widest"
+          style={{ background: C.gold, color: C.ink, ...mono }}>SÍ, SOY MAYOR DE 18</button>
+        <button onClick={() => setNo(true)} className="w-full py-3 rounded-sm text-sm tracking-widest"
+          style={{ border: "1px solid " + C.line, color: C.sage, ...mono }}>NO</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Aviso de privacidad, en ventana ── */
+function AvisoPrivacidad({ cerrar }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(0,0,0,0.75)" }} onClick={cerrar}>
+      <div className="max-w-md w-full max-h-[80vh] overflow-y-auto p-6 rounded-sm"
+        style={{ background: C.card, border: "1px solid " + C.line }} onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl mb-4" style={{ ...display, color: C.gold }}>Aviso de privacidad</h3>
+        <div className="text-xs leading-relaxed space-y-3" style={{ color: C.bone }}>
+          <p><b>Responsable.</b> {RESPONSABLE} es responsable del tratamiento de tus datos personales.</p>
+          <p><b>Datos que recabamos.</b> Correo electrónico y tus respuestas al cuestionario. No recabamos
+             nombre completo, teléfono, domicilio ni datos financieros.</p>
+          <p><b>Finalidades.</b> Enviarte el resultado de tu recomendación y, si lo autorizas, comunicaciones
+             sobre promociones y novedades. Las respuestas se usan de forma agregada y anónima para mejorar
+             nuestra carta.</p>
+          <p><b>Transferencias.</b> No compartimos tus datos con terceros con fines comerciales. Utilizamos
+             proveedores de infraestructura tecnológica que los procesan por nuestra instrucción.</p>
+          <p><b>Derechos ARCO.</b> Puedes solicitar el acceso, rectificación, cancelación u oposición al
+             tratamiento de tus datos, así como revocar tu consentimiento, escribiendo a {CORREO_ARCO}.</p>
+          <p><b>Conservación.</b> Conservamos tus datos mientras mantengas interés en recibir nuestras
+             comunicaciones o hasta que solicites su eliminación.</p>
+          <p style={{ color: C.sage }}>Última actualización: 2026.</p>
+        </div>
+        <button onClick={cerrar} className="mt-5 w-full py-2 rounded-sm text-xs tracking-widest"
+          style={{ background: C.gold, color: C.ink, ...mono }}>CERRAR</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Captura opcional de correo, con consentimiento explícito ── */
+function CapturaDatos({ onEnviar }) {
+  const [correo, setCorreo] = useState("");
+  const [acepta, setAcepta] = useState(false);
+  const [promos, setPromos] = useState(false);
+  const [estado, setEstado] = useState("");   // "", "enviando", "listo", "error"
+  const [diag, setDiag] = useState(null);
+  const [aviso, setAviso] = useState(false);
+
+  const valido = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo) && acepta;
+
+  const enviar = async () => {
+    if (!valido) return;
+    setEstado("enviando");
+    const r = await onEnviar({ correo, promos });
+    if (r && r.ok) { setEstado("listo"); }
+    else { setDiag(r); setEstado("error"); }
+  };
+
+  if (estado === "listo") return (
+    <div className="rounded-lg border p-5 text-center" style={{ borderColor: C.line, background: C.card }}>
+      <p className="text-sm" style={{ color: C.bone }}>Listo, te enviamos tu resultado.</p>
+      <p className="text-xs mt-2" style={{ color: C.sage }}>Puedes darte de baja cuando quieras.</p>
+    </div>
+  );
+
+  return (
+    <div className="rounded-lg border p-5" style={{ borderColor: C.line, background: C.card }}>
+      {aviso && <AvisoPrivacidad cerrar={() => setAviso(false)} />}
+      <h3 className="text-lg mb-1" style={{ ...display, color: C.gold }}>¿Te lo enviamos?</h3>
+      <p className="text-xs mb-4" style={{ color: C.sage }}>
+        Opcional. Puedes seguir sin dejar tus datos.
+      </p>
+
+      <input type="email" value={correo} onChange={e => setCorreo(e.target.value)}
+        placeholder="tu@correo.com" autoComplete="email"
+        className="w-full mb-3 px-4 py-3 rounded-sm outline-none text-sm"
+        style={{ background: C.ink, border: "1px solid " + C.line, color: C.bone }} />
+
+      <label className="flex gap-3 mb-3 cursor-pointer">
+        <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)}
+          style={{ marginTop: 3, accentColor: C.gold }} />
+        <span className="text-xs leading-snug" style={{ color: C.bone }}>
+          Acepto el tratamiento de mis datos conforme al{" "}
+          <button onClick={(e) => { e.preventDefault(); setAviso(true); }}
+            style={{ color: C.gold, textDecoration: "underline" }}>aviso de privacidad</button>.
+        </span>
+      </label>
+
+      <label className="flex gap-3 mb-4 cursor-pointer">
+        <input type="checkbox" checked={promos} onChange={e => setPromos(e.target.checked)}
+          style={{ marginTop: 3, accentColor: C.gold }} />
+        <span className="text-xs leading-snug" style={{ color: C.sage }}>
+          Quiero recibir promociones y novedades (opcional).
+        </span>
+      </label>
+
+      <button onClick={enviar} disabled={!valido || estado === "enviando"}
+        className="w-full py-3 rounded-sm text-xs tracking-widest"
+        style={{ background: valido ? C.gold : "transparent", color: valido ? C.ink : C.sage,
+                 border: "1px solid " + (valido ? C.gold : C.line), ...mono,
+                 cursor: valido ? "pointer" : "not-allowed" }}>
+        {estado === "enviando" ? "ENVIANDO…" : "ENVIAR"}
+      </button>
+      {estado === "error" && (
+        <div className="mt-3">
+          <p className="text-xs text-center" style={{ color: C.sage }}>
+            No pudimos guardarlo. Puedes pedirle la recomendación a tu mesero.
+          </p>
+          {diag && (
+            <div className="mt-3 p-3 rounded-sm text-[10px] leading-snug"
+              style={{ background: C.ink, border: "1px dashed " + C.line, color: C.sage, ...mono }}>
+              <div style={{ color: C.gold }}>DIAGNÓSTICO (quitar en producción)</div>
+              <div>código: {String(diag.status)}</div>
+              <div style={{ wordBreak: "break-all" }}>{String(diag.detalle || "").slice(0, 220)}</div>
+              <div className="mt-2" style={{ color: C.bone }}>
+                {diag.status === 404 && "→ La tabla no existe. Corre el SQL en Supabase."}
+                {diag.status === 401 && "→ Llave incorrecta o falta la política de inserción (RLS)."}
+                {diag.status === 403 && "→ Falta la política de inserción para el rol anon."}
+                {diag.status === 400 && "→ Alguna columna no coincide con la tabla."}
+                {diag.status === 0 && "→ No hubo respuesta: revisa que la URL sea correcta."}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Comanda para el personal ── */
+function Comanda({ ans, name, drink }) {
+  const P = { bg:"#F2EEE2", ink:"#2A3A37", soft:"#5A6B66", faint:"#9A968A", edge:"#B9B3A3" };
+  const lineas = ans.map((ai, i) => ({ label: Q[i].axis, value: Q[i].a[ai].t }));
+  return (
+    <div className="mx-auto w-full max-w-xs px-5 py-4" style={{ background: P.bg, ...mono }}>
+      <div className="text-center text-[10px] tracking-[0.25em] pb-2 mb-3"
+        style={{ color: P.soft, borderBottom: "1px dashed " + P.edge }}>CARTER BAR · COMANDA</div>
+      <div className="text-[11px] mb-3" style={{ color: P.ink }}>INVITADO: {name ? name.toUpperCase() : "—"}</div>
+      {lineas.map((l, i) => (
+        <div key={i} className="text-[11px] leading-relaxed flex justify-between gap-3">
+          <span style={{ color: P.faint }}>{l.label}</span>
+          <span className="text-right" style={{ color: P.ink }}>{l.value.slice(0, 22)}</span>
+        </div>
+      ))}
+      {drink && (
+        <div className="mt-3 pt-3" style={{ borderTop: "1px dashed " + P.edge }}>
+          <div className="flex justify-between text-[12px] font-bold" style={{ color: P.ink }}>
+            <span>{drink.n.toUpperCase()}</span><span>${drink.p}</span>
+          </div>
+          <div className="text-[10px] mt-1" style={{ color: P.faint }}>{drink.ml} ML · {drink.tag.toUpperCase()}</div>
+          <div className="text-center text-[9px] tracking-[0.25em] mt-4 pt-3"
+            style={{ color: P.faint, borderTop: "1px dashed " + P.edge }}>GRACIAS POR SU VISITA</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  const [edadOk, setEdadOk] = useState(false);
+  const [stage, setStage] = useState("intro");
+  const [sesion] = useState(() => "s_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8));
+  const [name, setName] = useState("");
+  const [ans, setAns] = useState([]);
+  const [qi, setQi] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => { setFade(false); const t = setTimeout(() => setFade(true), 20); return () => clearTimeout(t); }, [qi, stage]);
+
+  const pick = (i) => {
+    const next = [...ans]; next[qi] = i; setAns(next);
+    if (qi < Q.length - 1) setQi(qi + 1); else setStage("done");
+  };
+  const back = () => { if (qi > 0) setQi(qi - 1); };
+  const reset = () => { setStage("intro"); setAns([]); setQi(0); setName(""); };
+
+  // Guarda el resultado (sin datos personales) en cuanto termina el quiz
+  useEffect(() => {
+    if (stage !== "done" || ans.length !== Q.length) return;
+    const r = analyze(ans);
+    guardar({
+      sesion, restaurante: RESTAURANTE,
+      respuestas: ans.map((ai, i) => ({ pregunta: Q[i].axis, opcion: Q[i].a[ai].t })),
+      resultado: DRINKS[r.winner].n,
+      precio: DRINKS[r.winner].p,
+      alternativas: [DRINKS[r.runnerUp].n, DRINKS[r.third].n],
+      edad_confirmada: true,
+      creado: new Date().toISOString(),
+    });
+  }, [stage]);
+
+  // Actualiza la fila con el correo, sólo si la persona lo autoriza
+  const enviarCorreo = async ({ correo, promos }) => {
+    const r = analyze(ans);
+    const res = await guardar({
+      sesion, restaurante: RESTAURANTE, correo, marketing: promos,
+      consentimiento: true, consentimiento_fecha: new Date().toISOString(),
+      resultado: DRINKS[r.winner].n, edad_confirmada: true,
+      creado: new Date().toISOString(),
+    });
+    return res.demo ? { ok:true } : res;
+  };
+
+  const res = stage === "done" ? analyze(ans) : null;
+  const d = res ? DRINKS[res.winner] : null;
+
+  return (
+    <div className="min-h-screen w-full px-5 py-8" style={{ background: C.ink, color: C.bone }}>
+      <div className="mx-auto max-w-lg">
+        <div className="text-center mb-8">
+          <div className="text-[10px] tracking-[0.4em] mb-2" style={{ color: C.sage, ...mono }}>HACIENDA LA LABORCILLA</div>
+          <h1 className="text-4xl leading-tight" style={{ ...display, color: C.gold }}>Carter Bar</h1>
+          <div className="mx-auto mt-3 h-px w-16" style={{ background: C.line }} />
+        </div>
+
+        <div style={{ opacity: fade ? 1 : 0, transition: "opacity 300ms ease" }}>
+          {!edadOk && <PuertaEdad onPasa={() => setEdadOk(true)} />}
+
+          {edadOk && stage === "intro" && (
+            <div className="text-center">
+              <p className="text-2xl mb-3" style={{ ...display }}>¿Qué cóctel eres?</p>
+              <p className="text-sm mb-8 leading-relaxed" style={{ color: C.sage }}>
+                Siete preguntas sobre cómo te gusta beber. Al final, un trago de la carta real
+                y la explicación de por qué te tocó ese y no otro. Contesta rápido, sin pensarlo mucho.
+              </p>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && setStage("quiz")}
+                placeholder="Tu nombre (opcional)"
+                className="w-full mb-4 px-4 py-3 rounded-sm text-center outline-none text-sm"
+                style={{ background: C.card, border: `1px solid ${C.line}`, color: C.bone }}
+              />
+              <button onClick={() => setStage("quiz")} className="px-8 py-3 rounded-sm text-sm tracking-widest"
+                style={{ background: C.gold, color: C.ink, ...mono }}>
+                EMPEZAR
+              </button>
+            </div>
+          )}
+
+          {edadOk && stage === "quiz" && (
+            <div>
+              <div className="flex gap-1 mb-6">
+                {Q.map((_, i) => (
+                  <div key={i} className="h-[2px] flex-1" style={{ background: i <= qi ? C.gold : C.line }} />
+                ))}
+              </div>
+              <p className="text-[10px] tracking-[0.3em] mb-3" style={{ color: C.sage, ...mono }}>
+                PREGUNTA {qi + 1} DE {Q.length}
+              </p>
+              <h2 className="text-2xl mb-6 leading-snug" style={{ ...display }}>{Q[qi].q}</h2>
+              <div className="space-y-2">
+                {Q[qi].a.map((o, i) => (
+                  <button key={i} onClick={() => pick(i)}
+                    className="w-full text-left px-4 py-4 rounded-sm text-sm"
+                    style={{ background: C.card, border: `1px solid ${ans[qi] === i ? C.gold : C.line}`, color: C.bone }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.gold)}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = ans[qi] === i ? C.gold : C.line)}>
+                    {o.t}
+                  </button>
+                ))}
+              </div>
+              {qi > 0 && (
+                <button onClick={back} className="mt-6 text-xs tracking-widest" style={{ color: C.sage, ...mono }}>
+                  ← ANTERIOR
+                </button>
+              )}
+            </div>
+          )}
+
+          {edadOk && stage === "done" && d && (
+            <div className="space-y-5">
+              <p className="text-center text-[10px] tracking-[0.3em]" style={{ color: C.sage, ...mono }}>
+                {name ? `${name.toUpperCase()} · ` : ""}TU CÓCTEL ES
+              </p>
+
+              <div className="rounded-lg border p-6 text-center" style={{ borderColor: C.gold, background: C.card }}>
+                <div className="text-[10px] tracking-[0.3em] mb-3" style={{ color: C.sage, ...mono }}>{d.tag.toUpperCase()}</div>
+                <h2 className="text-4xl mb-2" style={{ ...display, color: C.gold }}>{d.n}</h2>
+                <p className="text-sm mb-4" style={{ color: C.bone }}>{d.d}</p>
+                <div className="flex justify-center gap-5 text-[11px]" style={{ color: C.sage, ...mono }}>
+                  <span>{d.ml} ml</span><span>${d.p}</span><span>ALCOHOL: {d.abv.toUpperCase()}</span>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-5" style={{ borderColor: C.line, background: C.card }}>
+                <h3 className="text-lg mb-2" style={{ ...display, color: C.gold }}>Por qué este trago</h3>
+                <p className="text-sm leading-relaxed" style={{ color: C.bone }}>{d.why}</p>
+              </div>
+
+              <div className="rounded-lg border p-5" style={{ borderColor: C.line, background: C.card }}>
+                <h3 className="text-lg mb-3" style={{ ...display, color: C.gold }}>Por qué te tocó a ti</h3>
+                <ul className="space-y-3">
+                  {res.reasons.map((r, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="text-[10px] pt-1" style={{ color: C.gold, ...mono }}>{r.axis.toUpperCase()}</span>
+                      <span className="flex-1 text-sm leading-snug" style={{ color: C.bone }}>
+                        Dijiste <span style={{ color: C.sage }}>“{r.label.toLowerCase()}”</span> — {r.read}, y el {d.n} vive justo ahí.
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Comanda ans={ans} name={name} drink={d} />
+
+              <CapturaDatos onEnviar={enviarCorreo} />
+
+              <div className="rounded-lg border p-5" style={{ borderColor: C.line, background: C.card }}>
+                <h3 className="text-sm mb-3 tracking-widest" style={{ color: C.sage, ...mono }}>SI ESE NO TE LATE</h3>
+                {[res.runnerUp, res.third].map((id) => (
+                  <div key={id} className="mb-3 last:mb-0">
+                    <div className="text-base" style={{ ...display, color: C.gold }}>{DRINKS[id].n} · ${DRINKS[id].p}</div>
+                    <div className="text-xs" style={{ color: C.sage }}>{DRINKS[id].d}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-center pt-1">
+                <button onClick={reset} className="px-6 py-2 rounded-sm text-xs tracking-widest"
+                  style={{ border: `1px solid ${C.line}`, color: C.sage, ...mono }}>
+                  REPETIR
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
+</body>
+</html>
